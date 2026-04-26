@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# agent-engineering-journey
 
-## Getting Started
+Public log of my 30-day journey from "Claude Code user" to "agent engineer."
+Each commit corresponds to a specific day in the plan documented in
+AltX_Master_Plan.docx (private).
 
-First, run the development server:
+## What's currently in this repo
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+A working PPM (Private Placement Memorandum) extractor agent built with the
+Vercel AI SDK and Claude Sonnet 4.6. Given a fragment of a fund offering
+document, the agent:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Extracts structural and commercial terms (fund name, manager, strategy,
+  vintage, fees, lockup, target IRR).
+- Calls a lookup_benchmark tool to compare against industry medians.
+- Identifies red flags with severity, category, and evidence.
+- Returns structured JSON validated against a Zod schema.
+- Self-assesses confidence and flags items for human review.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Next.js 16 (App Router)
+- Vercel AI SDK v6 — generateText with tools + structured output via
+  experimental_output and Output.object
+- @ai-sdk/anthropic provider
+- Zod for schema validation
+- TypeScript
 
-## Learn More
+## Endpoints
 
-To learn more about Next.js, take a look at the following resources:
+- GET /api/smoke — sanity check that the LLM and API key are wired correctly
+- POST /api/extract-ppm — the main agent. Body shape: { "document": "..." }
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Local development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Install deps, add an Anthropic API key to .env.local, run npm run dev,
+then POST to /api/extract-ppm with a JSON body containing a "document"
+field. See test-fixtures/sample-ppm-1.json for an example payload.
 
-## Deploy on Vercel
+## Day-by-day log
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Day 1 — Read Anthropic's "Building Effective Agents" + multi-agent
+  paper. Refactored a sub-agent of a separate trading bot to use the
+  agentic structure (role / context / approach / stop_conditions /
+  output_format).
+- Day 2 — Built a reusable agentic prompt template. Refactored briefs
+  for a separate Claude Code worker.
+- Day 3 — This repo. PPM extractor agent end-to-end with tool use +
+  structured outputs + Zod validation + Vercel deploy.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT. Use anything here however you want.
