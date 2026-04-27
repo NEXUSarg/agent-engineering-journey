@@ -47,6 +47,11 @@ field. See test-fixtures/sample-ppm-1.json for an example payload.
   for a separate Claude Code worker.
 - Day 3 — This repo. PPM extractor agent end-to-end with tool use +
   structured outputs + Zod validation + Vercel deploy.
+- Day 4 — Audited the 11 skills of the trading bot against
+  trigger-specificity criteria. All 11 kept; no rewrites needed.
+- Day 5 — Built an eval suite from scratch (evals/). Six cases passing.
+  Diagnosed and fixed a coherence bug between the agent's tool calls
+  and its final output structurally at the tool input schema layer.
 
 ## License
 
