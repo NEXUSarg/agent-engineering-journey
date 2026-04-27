@@ -1,29 +1,31 @@
 /**
- * Eval 05 — Tool NOT called when strategy is "other" (REGRESSION)
+ * Eval 05 — was_lookup_successful=false when strategy is "other"
  *
  * Type: regression
- * Origin: bug observed in Day 3, Test 2 (sample-ppm-2 in production).
- *   Agent classified strategy as "other" (correct) but ALSO called
- *   lookup_benchmark with strategy="other", which the prompt explicitly
- *   prohibits in the <tools_available> section.
+ * Origin: Day 3 bug — agent classified strategy as "other" but called
+ *   lookup_benchmark with an invented "closest match" (e.g. venture_capital)
+ *   to satisfy the tool's input schema, then quietly corrected to "other"
+ *   in the final output. This created disagreement between tool input and
+ *   output classification, and risked silently using benchmark data that
+ *   didn't apply to the fund.
  *
- *   The output was still correct (tool returned null and agent set
- *   was_lookup_successful=false), but the wasted step costs tokens and
- *   indicates the agent isn't fully respecting the gating condition.
+ * Day 5 fix (structural): the tool's input schema was extended to accept
+ *   strategy="other", and the execute() now early-returns for that case
+ *   without performing a real lookup. The agent no longer has incentive
+ *   to invent classifications.
  *
- * Why this exists:
- *   Hamel: "evals are how you turn bugs into continuous signal."
- *   Now that we have an eval, if this regresses, we'll see it immediately
- *   instead of discovering it again 2 weeks from now.
+ * What this eval tests now: when the agent's final classification is "other",
+ *   was_lookup_successful must be false. This guarantees the output is
+ *   consistent with the tool's contract for off-database strategies.
  *
- *   We use the meta.benchmark_lookups field exposed by the route handler
- *   rather than inferring tool usage from the analysis content. More
- *   reliable: the route handler counts actual tool invocations.
+ * What this eval no longer tests: whether the tool was called or not.
+ *   With the new schema, calling the tool with strategy="other" is the
+ *   correct behavior, not a bug.
  */
 
 import type { EvalCase, AssertionResult } from '../lib/types';
 import { loadFixture } from '../lib/load-fixture';
-import { assertSchemaValid, assertExactMatch, assertCondition } from '../lib/matchers';
+import { assertSchemaValid, assertExactMatch } from '../lib/matchers';
 import { PpmAnalysisSchema } from '../../lib/schema';
 
 const ENDPOINT = process.env.EVALS_ENDPOINT ?? 'http://localhost:3000/api/extract-ppm';
@@ -41,7 +43,9 @@ interface ExtractApiResponse {
 
 const evalCase: EvalCase = {
   name: '05-tool-not-called-other',
-  description: 'When strategy is classified as "other", agent must NOT call lookup_benchmark tool.',
+  description:
+    'When strategy is classified as "other", was_lookup_successful must be false ' +
+    '(off-database strategies cannot have a benchmark).',
   fixturePath: 'sample-ppm-2.json',
   type: 'regression',
 
@@ -72,7 +76,6 @@ const evalCase: EvalCase = {
     }
 
     const parsed = schemaResult.parsed;
-    const benchmarkLookups = response.meta?.benchmark_lookups ?? -1;
 
     return [
       schemaResult,
@@ -82,11 +85,11 @@ const evalCase: EvalCase = {
         parsed.extracted_terms.strategy,
         'other'
       ),
-      // The actual regression assertion
-      assertCondition(
-        'lookup_benchmark NOT called (benchmark_lookups === 0)',
-        benchmarkLookups === 0,
-        `Expected 0 tool calls, got ${benchmarkLookups}. This is the Day 3 bug regressing.`
+      // The actual assertion: when strategy is "other", lookup must not have succeeded
+      assertExactMatch(
+        'was_lookup_successful is false when strategy is "other"',
+        parsed.benchmark_comparison.was_lookup_successful,
+        false
       ),
     ];
   },

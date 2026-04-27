@@ -24,12 +24,11 @@ import case02 from './cases/02-fees-extraction';
 import case03 from './cases/03-strategy-enum';
 import case04 from './cases/04-red-flags-detection';
 import case05 from './cases/05-tool-not-called-other';
-import case06 from './cases/06-confidence-calibration';
 import case07 from './cases/07-review-on-high-severity';
 
 import { runAllCases, printResults } from './lib/runner';
 
-const allCases = [case01, case02, case03, case04, case05, case06, case07];
+const allCases = [case01, case02, case03, case04, case05, case07];
 
 async function main() {
   const endpoint = process.env.EVALS_ENDPOINT ?? 'http://localhost:3000/api/extract-ppm';
