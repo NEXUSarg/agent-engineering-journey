@@ -69,6 +69,7 @@ export async function POST(request: Request) {
               'buyout',
               'real_estate',
               'infrastructure',
+              'other',
             ])
             .describe('Fund strategy in snake_case.'),
           vintage_year: z
@@ -77,7 +78,20 @@ export async function POST(request: Request) {
             .describe('Vintage year of the fund (e.g. 2024 or 2025).'),
         }),
         execute: async ({ strategy, vintage_year }) => {
+          console.log('[lookup_benchmark CALLED with]:', { strategy, vintage_year });
           benchmarkLookupCount += 1;
+
+          // Early return for "other" — no benchmark exists for off-database strategies.
+          // This prevents the agent from inventing a "closest match" classification
+          // just to satisfy the tool's input schema. (See Day 5 eval 05 diagnosis.)
+          if (strategy === 'other') {
+            return {
+              found: false,
+              benchmark: null,
+              note: 'Strategy is "other" (off-database). No benchmark available.',
+            };
+          }
+
           const result = lookupBenchmark(strategy, vintage_year);
           return {
             found: result !== null,
